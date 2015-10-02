@@ -1,0 +1,86 @@
+<?php
+/**
+ * @file
+ * Module that alter site information by adding a field named Site API Key 
+ * Geneartes a url to display the json representation of node having content type page . The url includes the Site api key and the node id .
+ * Every node of content type page have a tab named JSON to display its json representation.
+ *
+ * @author Sneha Sahu
+ */
+
+function i_form_alter(&$form, &$form_state, $form_id) {
+  if ($form_id == 'system_site_information_settings') {
+    //adds a textfield in the form
+  $form['siteapikey_val'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Site API Key'),
+      '#default_value' => (variable_get('siteapikey')) ? variable_get('siteapikey') : t('No API Key yet'),
+    );
+    $form['#submit'][] = 'i_site_api_key_submit';
+     $form['actions']['submit']['#value'] = t('Update Configuration');
+      }
+}
+function i_site_api_key_submit($form, &$form_state) {
+  if (!empty( $form_state['values']['siteapikey_val'] )) {
+    variable_set('siteapikey', $form_state['values']['siteapikey_val']);
+    drupal_set_message(t('The Site API Key has been saved with %va', array('%va' => variable_get('siteapikey'))));
+  }
+  else{
+    variable_set('siteapikey', 'No API Key yet');
+  }
+}
+
+function i_menu() {
+$items = array();
+//adds tab in the node view pages to redirect to its json representaution link
+ $items['node/%node/json'] = array(
+    'title' => 'JSON',
+    'page callback' => 'i_redirect',
+    'page arguments' => array('node', 1),
+    'access callback' => 'i_content_type_check',
+    'access arguments' => array(1),
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 100,
+  );
+//custom page for json representaion
+  $items['page_json/%/%'] = array(
+  'title' => 'Json Representation of Node',
+  'page callback' => 'i_json_representation',
+    'access callback' => TRUE,
+    'page arguments' => array(1, 2),
+  );
+  return $items;
+}
+
+
+/**
+* Access callback
+*/
+function i_content_type_check($node) {
+  print_r($node);
+  if ($node->type != 'page') {
+    return FALSE;
+  }
+  return TRUE;
+}
+
+
+function i_redirect($node) {
+  $site_api = variable_get('siteapikey');
+  $nid_node = $node->nid;
+  $path = $_GET['q'];
+  $pathtest = explode("/", $path); 
+  $url = "page_json/" . $site_api . "/" . $pathtest[1];
+  drupal_goto($url);
+}
+
+function i_json_representation($sites_api_key_value, $nid) {
+  $node_det = node_load($nid);
+if(variable_get('siteapikey') && $sites_api_key_value == variable_get('siteapikey') && $node_det->type == 'page' && $node_det->nid) {
+   drupal_json_output( $node_det );
+}
+else {
+  echo "Access Denied";
+}  
+
+}
