@@ -1,0 +1,8 @@
+name = i
+description = Custom module to add "Site API Key" to the "Site Information" form and json represntation of the node having content type page .
+core = 7.x
+package = custom
+files[] = i.module
+version = "7.x-1.0"
+
+
